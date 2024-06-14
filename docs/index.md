@@ -24,9 +24,7 @@ For a bettter matching please use the notation in fqcn (fully-qualified collecti
 ```  
 
 ### Variables
-- The package iterates over all variables in the defaults and vars directories. To provide descriptions of the variables you can add the "@var:" annotation in the comment above the variable.
-
-[Variables](./variables.md)
+- The package iterates over all variables in the defaults and vars directories. To provide descriptions of the variables you can add the "@var:" annotation in the comment above the variable [see variables](./variables.md).
 
 For example:
 ``` yaml
@@ -36,5 +34,4 @@ For example:
 
 
 ### File Combination
-- The package produce a single md file for each file in the tasks directory but is it possile combine them in single files
-[File Combination](./file-combinations.md)
+- The package produce a single md file for each file in the tasks directory but is it possile combine them in single files see [File Combination](./file-combinations.md)
