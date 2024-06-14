@@ -25,20 +25,8 @@ For a bettter matching please use the notation in fqcn (fully-qualified collecti
 
 ### Variables
 - The package iterates over all variables in the defaults and vars directories. To provide descriptions of the variables you can add the "@var:" annotation in the comment above the variable.
-Is it possible to use a short form:
 
-``` yaml
-# @var: <variable_name>: <variable_description>
-```
-  or the extended form, if you want provide additional details:
-``` yaml
-# @var: 
-# <variable_name>:
-#   description: <variable_description>
-#   <some_meta>: <some_value>
-#   <some_other_meta>: <some_other_value>
-# @var_end
-```
+[Variables](./variables.md)
 
 For example:
 ``` yaml
