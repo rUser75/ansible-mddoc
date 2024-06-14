@@ -26,10 +26,6 @@ For a bettter matching please use the notation in fqcn (fully-qualified collecti
 ### Variables
 - The package iterates over all variables in the defaults and vars directories. To provide descriptions of the variables you can add the "@var:" annotation in the comment above the variable [see variables](./variables.md).
 
-For example:
-``` yaml
-# @var: my_var: This is a description of my variable!
-```
 - The package also identifies where the variable is used in the role and this is displayed under the "Where referenced" section under each variable. This is useful to see how the variables are used and also to identify if there are variables that are unused in the role.
 
 
