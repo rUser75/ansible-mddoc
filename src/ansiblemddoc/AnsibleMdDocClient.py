@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# copyright rUser75
 
 import os
 import sys
