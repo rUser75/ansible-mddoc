@@ -28,6 +28,8 @@ For a bettter matching please use the notation in fqcn (fully-qualified collecti
 
 - The package also identifies where the variable is used in the role and this is displayed under the "Where referenced" section under each variable. This is useful to see how the variables are used and also to identify if there are variables that are unused in the role.
 
-
 ### File Combination
 - The package produce a single md file for each file in the tasks directory but is it possile combine them in single files see [File Combination](./file-combinations.md)
+
+### Usage
+- for usage and command line options see [usage](./usage.md)
