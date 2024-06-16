@@ -2,7 +2,7 @@
 
 
 
-# install-playbook.yml
+# ./install-playbook.yml
 
 
 * Tasks:
