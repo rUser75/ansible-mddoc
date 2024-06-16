@@ -4,7 +4,9 @@ ansible-mddoc is a package used to auto generate documentation for an ansible ro
 
 ## To install
 ```
-pip install ansible-mddoc
+git clone https://github.com/rUser75/ansible-mddoc.git
+cd ansible-mddoc
+pip3 install .
 ```
 
 
@@ -14,6 +16,8 @@ Call ansible-mddoc passing in the path to the role
 ```
 ansible-mddoc <path_to_role>
 ```
+
+
 
 ## Documentation
 
