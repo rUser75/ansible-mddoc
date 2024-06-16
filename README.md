@@ -23,5 +23,7 @@ See [here](./docs/index.md) for full documentation.
 
 
 The idea for this project is based on (and includes some code from)
-* [ansible-mdgen](https://github.com/murphypetercl/ansible-mdgen) by Peter Murphy
-* [ansible-autodoc](https://github.com/AndresBott/ansible-autodoc) by Andres Bott so credit to him for his work.
+
+credit to them for their work:
+  * [ansible-mdgen](https://github.com/murphypetercl/ansible-mdgen) by Peter Murphy
+  * [ansible-autodoc](https://github.com/AndresBott/ansible-autodoc) by Andres Bott
