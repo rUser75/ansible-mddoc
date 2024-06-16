@@ -1,0 +1,37 @@
+---
+- name: Install Apache, PHP, and MariaDB
+  hosts: all
+  become: true
+
+  import_vars: vars/main.yml
+  tasks:
+
+
+    - name: Install MariaDB
+      yum:
+        name: mariadb-server
+        state: latest
+
+    - name: Start and enable MariaDB service
+      systemd:
+        name: mariadb
+        enabled: yes
+        state: started
+
+    - name: Install Apache
+      yum:
+        name: httpd
+        state: latest
+
+    - name: Enable PHP modules for Apache
+      yum:
+        name: php
+        state: latest
+
+    - name: Enable default Apache website
+      shell: systemctl enable httpd
+
+    - name: Restart Apache
+      service:
+        name: httpd
+        state: restarted

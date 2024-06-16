@@ -1,0 +1,7 @@
+---
+# vars file
+
+# @var: http_port: #standard http port
+
+http_port: 80
+
