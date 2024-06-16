@@ -31,5 +31,8 @@ For a bettter matching please use the notation in fqcn (fully-qualified collecti
 ### File Combination
 - The package produce a single md file for each file in the tasks directory but is it possile combine them in single files see [File Combination](./file-combinations.md)
 
-### Usage
+## Usage
 - for usage and command line options see [usage](./usage.md)
+
+## Know problems
+[issue and fix](./know_problems.md)

@@ -28,6 +28,11 @@ class TasksWriter(WriterBase):
 
         self.createMDFlowFile(self.tasks_dir, self.config.get_output_tasks_dir())
 
+        if hasattr(self.config, 'playbook_main'):
+           if self.config.playbook_main is not None:
+              self.log.debug("(func getFlowData) render file using:"+self.config.playbook_main)
+              self.createMDFile(self.config.get_base_dir(), self.config.playbook_main,self.config.get_output_dir())
+
         if (self.config.tasks != None and self.config.tasks['combinations'] != None):
             self.iterateOnCombinations(self.tasks_dir, self.config.tasks['combinations'], self.config.get_output_tasks_dir())
         else:
@@ -42,7 +47,6 @@ class TasksWriter(WriterBase):
 
 
     def createMDFile(self, dirpath, filename, output_directory):
-
         self.log.info("(createMDFile) Create MD File")
         self.log.debug("(createMDFile) dirpath: "+dirpath)
         self.log.debug("(createMDFile) filename: "+filename)
@@ -52,6 +56,9 @@ class TasksWriter(WriterBase):
             docspath = dirpath.replace(self.tasks_dir,self.config.get_output_tasks_dir())
         else:
             docspath = dirpath.replace(self.handlers_dir,self.config.get_output_handlers_dir())
+        if docspath == self.config.get_base_dir():
+            docspath =  self.config.get_output_dir()
+
         self.log.debug("(createMDFile) docspath: "+docspath)
 
         if not os.path.exists(docspath):
@@ -66,52 +73,83 @@ class TasksWriter(WriterBase):
 
     
     def addTasks(self, filename, mdFile):
-        self.log.debug("(addTasks) Filename: "+filename)
+        self.log.debug("(addTasks) Filename: " + filename)
+        
+        def process_tasks(tasks, indent=0):
+            if tasks is not None:
+                for task in tasks:
+                    try:
+                        if 'block' in task.keys():
+                            if 'name' in task.keys():
+                                mdFile.new_paragraph(' ' * indent + '* Block: ' + task["name"])
+                            else:
+                                mdFile.new_paragraph(' ' * indent + '* Block: ')
+    
+                            for btask in task["block"]:
+                                if 'name' in btask.keys():
+                                    mdFile.new_paragraph(' ' * (indent + 4) + '* ' + btask["name"])
+                                if 'tags' in btask.keys():
+                                    mdFile.write('  \n')
+                                    mdFile.write('Tags: ', bold_italics_code='b', color='green')
+                                    mdFile.write(btask["tags"])
+    
+                        elif 'name' in task.keys():
+                            mdFile.new_paragraph(' ' * indent + '* ' + task["name"])
+                        else:
+                            mdFile.new_paragraph(' ' * indent + '* No description available for this task - here is the definition:')
+                            mdFile.new_line("```")
+                            mdFile.new_paragraph(yaml.safe_dump(task, default_flow_style=False, allow_unicode=True))
+                            mdFile.new_line("```")
+    
+                        if 'tags' in task.keys():
+                            mdFile.write('  \n')
+                            mdFile.write('Tags: ', color='green')
+                            if isinstance(task["tags"], list):
+                                taglist = ""
+                                for tag in task["tags"]:
+                                    if taglist == "":
+                                        taglist = tag
+                                    else:
+                                        taglist = taglist + "," + tag
+                                mdFile.write(taglist)
+                            else:
+                                mdFile.write(task["tags"])
+                    except Exception:
+                        print(task)
+                        pass
+        
         with open(filename, 'r') as stream:
             try:
-                tasks = yaml.safe_load(stream)
-                if tasks != None:
-                    for task in tasks:
-                        try:
-                            if 'block' in task.keys():
-                                if 'name' in task.keys():
-                                    mdFile.new_paragraph('* Block: '+task["name"])
+                playbook = yaml.safe_load(stream)
+                if playbook is not None:
+                    for element in playbook:
+                        if 'tasks' in element.keys():
+                            self.log.debug("(addTasks) found tasks")
+                            mdFile.new_paragraph('* Tasks:')
+                            process_tasks(element['tasks'], indent=4)
+                        if 'handlers' in element.keys():
+                            mdFile.new_paragraph('* Handlers:')
+                            process_tasks(element['handlers'], indent=4)
+                        if 'pre_tasks' in element.keys():
+                            mdFile.new_paragraph('* Pre-tasks:')
+                            process_tasks(element['pre_tasks'], indent=4)
+                        if 'post_tasks' in element.keys():
+                            mdFile.new_paragraph('* Post-tasks:')
+                            process_tasks(element['post_tasks'], indent=4)
+                        if 'roles' in element.keys():
+                            self.log.debug("(addTasks) found roles")
+                            mdFile.new_paragraph('* Roles:')
+                            for role in element['roles']:
+                                if isinstance(role, str):
+                                    mdFile.new_paragraph('    * ' + role)
+                                elif isinstance(role, dict) and 'role' in role.keys():
+                                    mdFile.new_paragraph('    * ' + role['role'])
                                 else:
-                                    mdFile.new_paragraph('* Block: ')
-
-                                for btask in task["block"]:
-                                    if 'name' in btask.keys():
-                                        mdFile.new_paragraph('    * '+btask["name"])
-                                    if 'tags' in btask.keys():
-                                        mdFile.write('  \n')
-                                        mdFile.write('Tags: ', bold_italics_code='b', color='green')
-                                        mdFile.write(btask["tags"])
-
-                            elif 'name' in task.keys():
-                                mdFile.new_paragraph('* '+task["name"])
-                            else:
-                                mdFile.new_paragraph('* No description available for this task - here is the definition:')
-                                mdFile.new_line("```")
-                                mdFile.new_paragraph(yaml.safe_dump(task,  default_flow_style=False, allow_unicode=True))
-                                mdFile.new_line("```")
-                            
-                            if 'tags' in task.keys():
-                                mdFile.write('  \n')
-                                mdFile.write('Tags: ', color='green')
-                                if isinstance(task["tags"], list):
-                                    taglist = ""
-                                    for tag in task["tags"]:
-                                        if taglist == "":
-                                            taglist = tag
-                                        else:
-                                            taglist = taglist+","+tag
-                                    mdFile.write(taglist)
-                                else:
-                                    mdFile.write(task["tags"])
-                        except Exception:
-                            print(task)
-                            pass
-
+                                    mdFile.new_paragraph('    * ' + str(role))
+                        if 'include' in element.keys() or 'import_playbook' in element.keys():
+                            include_key = 'include' if 'include' in element.keys() else 'import_playbook'
+                            mdFile.new_paragraph('* Includes:')
+                            mdFile.new_paragraph('    * ' + element[include_key])
             except yaml.YAMLError as exc:
                 print(exc)
 
@@ -170,7 +208,8 @@ class TasksWriter(WriterBase):
            if self.config.playbook_main is not None:
               self.log.debug("(func getFlowData) main file using :"+self.config.playbook_main)
               self.getFlowDataForFile(self.config.get_base_dir(), self.config.playbook_main)
-        self.getFlowDataForFile(directory, f'main{self.config.yaml_extension}')
+        else:
+           self.getFlowDataForFile(directory, f'main{self.config.yaml_extension}')
         self.getOrphanedFlowData(directory)
 
     def getFlowDataForFile(self, directory, filename):

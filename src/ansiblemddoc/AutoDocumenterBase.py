@@ -20,9 +20,12 @@ class WriterBase:
             os.makedirs(doc_directory)
     
     def iterateOnFilesAndDirectories(self, directory, output_directory):
+
         self.log.debug("(iterateOnFilesAndDirectories) directory: "+ directory)
         self.log.debug("(iterateOnFilesAndDirectories) output_directory: "+ output_directory)
 
+        
+        
         for (dirpath, dirnames, filenames) in walk(directory):
             self.log.debug("(iterateOnFilesAndDirectories) dirpath: "+ dirpath)
             relPath = dirpath.replace(directory,"")
