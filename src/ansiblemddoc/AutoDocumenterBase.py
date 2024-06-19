@@ -20,6 +20,7 @@ class WriterBase:
             os.makedirs(doc_directory)
     
     def iterateOnFilesAndDirectories(self, directory, output_directory):
+        allowed_extensions = ['.sh']
 
         self.log.debug("(iterateOnFilesAndDirectories) directory: "+ directory)
         self.log.debug("(iterateOnFilesAndDirectories) output_directory: "+ output_directory)
@@ -30,10 +31,15 @@ class WriterBase:
             self.log.debug("(iterateOnFilesAndDirectories) dirpath: "+ dirpath)
             relPath = dirpath.replace(directory,"")
 
+#            for filename in filenames:
+#                #ignore any existing md files and vault encrypted files
+#                if not filename.endswith('.md') and not filename.endswith('.sh') and not filename.endswith('.zip') and self.isFileVaultEncrypted(dirpath, filename) is False:
+#                        self.createMDFile(dirpath, filename, output_directory+"/"+relPath)
             for filename in filenames:
-                #ignore any existing md files and vault encrypted files
-                if not filename.endswith('.md') and not filename.endswith('.sh') and not filename.endswith('.zip') and self.isFileVaultEncrypted(dirpath, filename) is False:
-                        self.createMDFile(dirpath, filename, output_directory+"/"+relPath)
+                # ignore any existing md files and vault encrypted files
+                file_extension = os.path.splitext(filename)[1]
+                if file_extension in allowed_extensions and not filename.endswith('.md') and self.isFileVaultEncrypted(dirpath, filename) is False:
+                    self.createMDFile(dirpath, filename, output_directory+"/"+relPath)
 
     def iterateOnCombinations(self, directory, combinations, output_directory):
         for combination in combinations:
