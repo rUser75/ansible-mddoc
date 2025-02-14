@@ -20,7 +20,7 @@ class WriterBase:
             os.makedirs(doc_directory)
     
     def iterateOnFilesAndDirectories(self, directory, output_directory):
-        allowed_extensions = ['.sh']
+        allowed_extensions = ['.sh','.yml','.yaml']
 
         self.log.debug("(iterateOnFilesAndDirectories) directory: "+ directory)
         self.log.debug("(iterateOnFilesAndDirectories) output_directory: "+ output_directory)
