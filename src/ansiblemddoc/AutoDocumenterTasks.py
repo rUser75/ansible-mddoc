@@ -51,7 +51,7 @@ class TasksWriter(WriterBase):
         self.log.debug("(createMDFile) dirpath: "+dirpath)
         self.log.debug("(createMDFile) filename: "+filename)
         self.log.debug("(createMDFile) output_directory: "+output_directory)
-        
+
         if output_directory.find(self.config.get_output_tasks_dir()) != -1:
             docspath = dirpath.replace(self.tasks_dir,self.config.get_output_tasks_dir())
         else:
@@ -65,59 +65,57 @@ class TasksWriter(WriterBase):
             os.makedirs(docspath)
 
         mdFile = MdUtils(file_name=docspath+"/"+filename.replace(self.config.yaml_extension,''))
-        mdFile.new_header(level=1, title=filename) 
+        mdFile.new_header(level=1, title=filename)
         self.addTasks(dirpath+"/"+filename, mdFile)
 
         mdFile.create_md_file()
         self.log.info("(createMDFile) Create MD File Complete")
 
-    
     def addTasks(self, filename, mdFile):
         self.log.debug("(addTasks) Filename: " + filename)
-        
+
         def process_tasks(tasks, indent=0):
+            """
+            Processa e scrive i task trovati, includendo sia task normali che quelli all'interno di blocchi.
+            """
             if tasks is not None:
                 for task in tasks:
                     try:
+                        # Gestire i blocchi
                         if 'block' in task.keys():
                             if 'name' in task.keys():
                                 mdFile.new_paragraph(' ' * indent + '* Block: ' + task["name"])
                             else:
-                                mdFile.new_paragraph(' ' * indent + '* Block: ')
-    
-                            for btask in task["block"]:
-                                if 'name' in btask.keys():
-                                    mdFile.new_paragraph(' ' * (indent + 4) + '* ' + btask["name"])
-                                if 'tags' in btask.keys():
-                                    mdFile.write('  \n')
-                                    mdFile.write('Tags: ', bold_italics_code='b', color='green')
-                                    mdFile.write(btask["tags"])
-    
+                                mdFile.new_paragraph(' ' * indent + '* Block: (Unnamed block)')
+                            process_tasks(task["block"], indent + 4)
+
+                        # Gestire un task normale (fuori dai blocchi)
                         elif 'name' in task.keys():
                             mdFile.new_paragraph(' ' * indent + '* ' + task["name"])
+
+                        # Fallback: gestione di task senza nome
                         else:
-                            mdFile.new_paragraph(' ' * indent + '* No description available for this task - here is the definition:')
+                            mdFile.new_paragraph(' ' * indent + '* Task without description:')
                             mdFile.new_line("```")
-                            mdFile.new_paragraph(yaml.safe_dump(task, default_flow_style=False, allow_unicode=True))
+                            mdFile.new_paragraph(
+                                yaml.safe_dump(task, default_flow_style=False, allow_unicode=True)
+                            )
                             mdFile.new_line("```")
-    
+
+                        # Scrivere i tag, se esistenti
                         if 'tags' in task.keys():
                             mdFile.write('  \n')
                             mdFile.write('Tags: ', color='green')
                             if isinstance(task["tags"], list):
-                                taglist = ""
-                                for tag in task["tags"]:
-                                    if taglist == "":
-                                        taglist = tag
-                                    else:
-                                        taglist = taglist + "," + tag
-                                mdFile.write(taglist)
+                                mdFile.write(",".join(task["tags"]))
                             else:
                                 mdFile.write(task["tags"])
-                    except Exception:
-                        print(task)
-                        pass
-        
+
+                    except Exception as e:
+                        self.log.error(f"Errore durante la gestione del task: {e}")
+                        print(f"Errore durante il task: {e}")
+
+        # Carica il file YAML e processa il contenuto
         with open(filename, 'r') as stream:
             try:
                 playbook = yaml.safe_load(stream)
@@ -127,31 +125,19 @@ class TasksWriter(WriterBase):
                             self.log.debug("(addTasks) found tasks")
                             mdFile.new_paragraph('* Tasks:')
                             process_tasks(element['tasks'], indent=4)
-                        if 'handlers' in element.keys():
-                            mdFile.new_paragraph('* Handlers:')
-                            process_tasks(element['handlers'], indent=4)
-                        if 'pre_tasks' in element.keys():
-                            mdFile.new_paragraph('* Pre-tasks:')
-                            process_tasks(element['pre_tasks'], indent=4)
-                        if 'post_tasks' in element.keys():
-                            mdFile.new_paragraph('* Post-tasks:')
-                            process_tasks(element['post_tasks'], indent=4)
-                        if 'roles' in element.keys():
-                            self.log.debug("(addTasks) found roles")
-                            mdFile.new_paragraph('* Roles:')
-                            for role in element['roles']:
-                                if isinstance(role, str):
-                                    mdFile.new_paragraph('    * ' + role)
-                                elif isinstance(role, dict) and 'role' in role.keys():
-                                    mdFile.new_paragraph('    * ' + role['role'])
-                                else:
-                                    mdFile.new_paragraph('    * ' + str(role))
-                        if 'include' in element.keys() or 'import_playbook' in element.keys():
-                            include_key = 'include' if 'include' in element.keys() else 'import_playbook'
-                            mdFile.new_paragraph('* Includes:')
-                            mdFile.new_paragraph('    * ' + element[include_key])
+
+                        elif 'block' in element.keys():
+                            self.log.debug("(addTasks) found top-level block")
+                            process_tasks([element], indent=0)
+
+                        elif isinstance(element, dict) and 'name' in element.keys():
+                            self.log.debug("(addTasks) found top-level task")
+                            process_tasks([element], indent=0)
+
             except yaml.YAMLError as exc:
+                self.log.error(f"Errore YAML: {exc}")
                 print(exc)
+
 
     def createMDCombinationFile(self, comboFilename, directory, output_directory, filenamesToCombine):
 
@@ -160,7 +146,7 @@ class TasksWriter(WriterBase):
         self.log.debug("(createMDCombinationFile) directory: "+directory)
         self.log.debug("(createMDCombinationFile) output_directory: "+output_directory)
 
-        comboFilenameAbs = output_directory+"/"+comboFilename      
+        comboFilenameAbs = output_directory+"/"+comboFilename
         comboFileDirectory = comboFilenameAbs[0:int(comboFilenameAbs.rfind('/'))]
 
         if not os.path.exists(comboFileDirectory):
@@ -172,17 +158,17 @@ class TasksWriter(WriterBase):
         mdFile.new_line("---")
         for filename in filenamesToCombine:
             mdFile.new_line("")
-            mdFile.new_header(level=2, title=filename['name']) 
+            mdFile.new_header(level=2, title=filename['name'])
 
             self.addTasks(directory+"/"+filename['name'], mdFile)
 
         mdFile.create_md_file()
-    
+
     def createMDFlowFile(self, directory, output_directory):
 
         self.log.debug("(func createMDFlowFile) dir: "+directory)
         mdFile = MdUtils(file_name=output_directory+"/flow")
-        mdFile.new_header(level=1, title='Flow') 
+        mdFile.new_header(level=1, title='Flow')
 
         self.getFlowData(directory)
 
