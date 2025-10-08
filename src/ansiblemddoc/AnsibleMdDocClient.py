@@ -73,6 +73,9 @@ class AnsibleMdDoc:
         """
         self.config.set_base_dir(os.path.abspath(args.project_dir))
 
+        # Initialize role detection
+        self.config._set_is_role()
+
         # search for config file
         if args.conf != "":
             conf_file = os.path.abspath(args.conf)

@@ -84,14 +84,14 @@ class TasksWriter(WriterBase):
                         # Gestire i blocchi
                         if 'block' in task.keys():
                             if 'name' in task.keys():
-                                mdFile.new_paragraph(' ' * indent + '* Block: ' + task["name"])
+                                mdFile.new_paragraph(' ' * indent + '* Block: ' + str(task["name"]))
                             else:
                                 mdFile.new_paragraph(' ' * indent + '* Block: (Unnamed block)')
                             process_tasks(task["block"], indent + 4)
 
                         # Gestire un task normale (fuori dai blocchi)
                         elif 'name' in task.keys():
-                            mdFile.new_paragraph(' ' * indent + '* ' + task["name"])
+                            mdFile.new_paragraph(' ' * indent + '* ' + str(task["name"]))
 
                         # Fallback: gestione di task senza nome
                         else:
