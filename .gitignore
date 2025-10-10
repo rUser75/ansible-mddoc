@@ -1,4 +1,5 @@
 .claude
+<<<<<<< HEAD
 #ignora cache di Python
 __pycache__/
 *.py[cod]
@@ -7,3 +8,5 @@ __pycache__/
 *~
 *.swp
 *.swo
+=======
+>>>>>>> f96e2993f69a5df45fc1460450201067fe77efc1
