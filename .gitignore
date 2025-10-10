@@ -1,1 +1,9 @@
 .claude
+#ignora cache di Python
+__pycache__/
+*.py[cod]
+*$py.class
+# Ignore vim files:
+*~
+*.swp
+*.swo
