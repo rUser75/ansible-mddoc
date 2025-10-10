@@ -40,6 +40,9 @@ clear_output = True
     # project base directory
     _base_dir = ""
 
+    # whether the project has a roles directory
+    has_roles_directory = False
+
     # name of the config file to search for
     config_file_name = ".ansible-mddoc.yaml"
     # if config file is not in root of project, this is used to make output relative to config file
@@ -75,10 +78,35 @@ clear_output = True
         self.project_name = os.path.basename(self._base_dir)
         if os.path.isdir(self._base_dir+"/roles"):
             self.is_role = False
+            self.has_roles_directory = True
         elif os.path.isdir(self._base_dir+"/tasks"):
             self.is_role = True
+            self.has_roles_directory = False
         else:
             self.is_role = None
+            self.has_roles_directory = False
+
+    def get_roles_list(self):
+        """
+        Get list of roles in the roles directory
+        :return: list of role names
+        """
+        if not self.has_roles_directory:
+            return []
+
+        roles_dir = self._base_dir + "/roles"
+        roles = []
+        if os.path.exists(roles_dir):
+            for item in os.listdir(roles_dir):
+                role_path = os.path.join(roles_dir, item)
+                if os.path.isdir(role_path):
+                    # Check if it has typical role structure
+                    if (os.path.isdir(role_path + "/tasks") or
+                        os.path.isdir(role_path + "/handlers") or
+                        os.path.isdir(role_path + "/defaults") or
+                        os.path.isdir(role_path + "/vars")):
+                        roles.append(item)
+        return roles
 
     def get_output_dir(self):
         """

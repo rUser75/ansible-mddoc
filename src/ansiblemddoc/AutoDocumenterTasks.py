@@ -84,14 +84,14 @@ class TasksWriter(WriterBase):
                         # Gestire i blocchi
                         if 'block' in task.keys():
                             if 'name' in task.keys():
-                                mdFile.new_paragraph(' ' * indent + '* Block: ' + task["name"])
+                                mdFile.new_paragraph(' ' * indent + '* Block: ' + str(task["name"]))
                             else:
                                 mdFile.new_paragraph(' ' * indent + '* Block: (Unnamed block)')
                             process_tasks(task["block"], indent + 4)
 
                         # Gestire un task normale (fuori dai blocchi)
                         elif 'name' in task.keys():
-                            mdFile.new_paragraph(' ' * indent + '* ' + task["name"])
+                            mdFile.new_paragraph(' ' * indent + '* ' + str(task["name"]))
 
                         # Fallback: gestione di task senza nome
                         else:
@@ -167,6 +167,9 @@ class TasksWriter(WriterBase):
     def createMDFlowFile(self, directory, output_directory):
 
         self.log.debug("(func createMDFlowFile) dir: "+directory)
+        # Reset flow data for each flow file generation
+        self.flow = {}
+
         mdFile = MdUtils(file_name=output_directory+"/flow")
         mdFile.new_header(level=1, title='Flow')
 
@@ -190,13 +193,26 @@ class TasksWriter(WriterBase):
 
     def getFlowData(self, directory):
         self.log.debug("(func getFlowData) dir:"+directory)
-        if hasattr(self.config, 'playbook_main'):
-           if self.config.playbook_main is not None:
-              self.log.debug("(func getFlowData) main file using :"+self.config.playbook_main)
-              self.getFlowDataForFile(self.config.get_base_dir(), self.config.playbook_main)
+
+        # If we're generating documentation for a role (directory ends with /roles/role_name/tasks)
+        if hasattr(self.config, 'is_role') and self.config.is_role == True:
+            self.log.debug("(func getFlowData) processing role - using role tasks/main file")
+            self.getFlowDataForFile(directory, f'main{self.config.yaml_extension}')
+        # If we're in the main project directory, process the main playbook file
+        elif hasattr(self.config, 'playbook_main') and self.config.playbook_main is not None:
+            self.log.debug("(func getFlowData) main project - using playbook_main: "+self.config.playbook_main)
+            self.getFlowDataForFile(self.config.get_base_dir(), self.config.playbook_main)
+        # For main project without playbook_main, look for main.yml in project root
+        elif directory.endswith('/tasks') and self.config.get_base_dir() + '/tasks' == directory:
+            self.log.debug("(func getFlowData) main project - using project root main file")
+            self.getFlowDataForFile(self.config.get_base_dir(), f'main{self.config.yaml_extension}')
+        # Fallback to main.yml in current directory
         else:
-           self.getFlowDataForFile(directory, f'main{self.config.yaml_extension}')
-        self.getOrphanedFlowData(directory)
+            self.log.debug("(func getFlowData) fallback - using directory main file")
+            self.getFlowDataForFile(directory, f'main{self.config.yaml_extension}')
+        # Skip getOrphanedFlowData for roles to avoid mixing flows
+        if not (hasattr(self.config, 'is_role') and self.config.is_role == True):
+            self.getOrphanedFlowData(directory)
 
     def getFlowDataForFile(self, directory, filename):
         self.log.debug("(func getFlowDataForFile) dir: "+directory+" filename: "+filename)
@@ -206,38 +222,71 @@ class TasksWriter(WriterBase):
                 if tasks != None:
                     for task in tasks:
                         rel_dir=os.path.relpath(directory,self.config.get_base_dir())
+                        # For roles, remove 'tasks/' prefix to maintain consistency with YAML references
+                        if hasattr(self.config, 'is_role') and self.config.is_role == True and rel_dir == 'tasks':
+                            rel_dir = ''
                         self.log.debug("(func getFlowDataForFile) relative directory path: "+rel_dir)
                         if 'tasks' in task.keys():
                             for btask in task["tasks"]:
                                 self.log.debug("(func getFlowDataForFile) main file")
                                 try:
+                                    # Build consistent filename for flow nodes
+                                    flow_filename = filename if rel_dir == '' else rel_dir+"/"+filename
                                     if 'ansible.builtin.include_tasks' in btask.keys():
-                                        self.getTaskReuseFile(btask, "ansible.builtin.include_tasks", rel_dir+"/"+filename)
+                                        self.getTaskReuseFile(btask, "ansible.builtin.include_tasks", flow_filename, directory)
                                     elif 'ansible.builtin.import_tasks' in btask.keys():
-                                        self.getTaskReuseFile(btask, "ansible.builtin.import_tasks", rel_dir+"/"+filename)
+                                        self.getTaskReuseFile(btask, "ansible.builtin.import_tasks", flow_filename, directory)
+                                    elif 'ansible.builtin.include_role' in btask.keys():
+                                        self.getTaskRoleFile(btask, "ansible.builtin.include_role", flow_filename)
+                                    elif 'ansible.builtin.import_role' in btask.keys():
+                                        self.getTaskRoleFile(btask, "ansible.builtin.import_role", flow_filename)
+                                    elif 'include_role' in btask.keys():
+                                        self.getTaskRoleFile(btask, "include_role", flow_filename)
+                                    elif 'import_role' in btask.keys():
+                                        self.getTaskRoleFile(btask, "import_role", flow_filename)
                                 except Exception:
                                     pass
                         if 'block' in task.keys():
                             for btask in task["block"]:
                                 try:
+                                    # Build consistent filename for flow nodes
+                                    flow_filename = filename if rel_dir == '' else rel_dir+"/"+filename
                                     if 'ansible.builtin.include_tasks' in btask.keys():
-                                        self.getTaskReuseFile(btask, "ansible.builtin.include_tasks", filename)
+                                        self.getTaskReuseFile(btask, "ansible.builtin.include_tasks", flow_filename, directory)
                                     elif 'ansible.builtin.import_tasks' in btask.keys():
-                                        self.getTaskReuseFile(btask, "ansible.builtin.import_tasks", filename)
+                                        self.getTaskReuseFile(btask, "ansible.builtin.import_tasks", flow_filename, directory)
+                                    elif 'ansible.builtin.include_role' in btask.keys():
+                                        self.getTaskRoleFile(btask, "ansible.builtin.include_role", flow_filename)
+                                    elif 'ansible.builtin.import_role' in btask.keys():
+                                        self.getTaskRoleFile(btask, "ansible.builtin.import_role", flow_filename)
+                                    elif 'include_role' in btask.keys():
+                                        self.getTaskRoleFile(btask, "include_role", flow_filename)
+                                    elif 'import_role' in btask.keys():
+                                        self.getTaskRoleFile(btask, "import_role", flow_filename)
                                 except Exception:
                                     pass
                         try:
                             self.log.debug("(func getFlowDataForFile) tasks file")
+                            # Build consistent filename for flow nodes
+                            flow_filename = filename if rel_dir == '' else rel_dir+"/"+filename
                             if 'ansible.builtin.include_tasks' in task.keys():
-                                self.getTaskReuseFile(task, "ansible.builtin.include_tasks", rel_dir+"/"+filename)
+                                self.getTaskReuseFile(task, "ansible.builtin.include_tasks", flow_filename, directory)
                             elif 'ansible.builtin.import_tasks' in task.keys():
-                                self.getTaskReuseFile(task, "ansible.builtin.import_tasks", rel_dir+"/"+ filename)
+                                self.getTaskReuseFile(task, "ansible.builtin.import_tasks", flow_filename, directory)
+                            elif 'ansible.builtin.include_role' in task.keys():
+                                self.getTaskRoleFile(task, "ansible.builtin.include_role", flow_filename)
+                            elif 'ansible.builtin.import_role' in task.keys():
+                                self.getTaskRoleFile(task, "ansible.builtin.import_role", flow_filename)
+                            elif 'include_role' in task.keys():
+                                self.getTaskRoleFile(task, "include_role", flow_filename)
+                            elif 'import_role' in task.keys():
+                                self.getTaskRoleFile(task, "import_role", flow_filename)
                         except Exception:
                             pass
             except yaml.YAMLError as exc:
                 print(exc)
 
-    def getTaskReuseFile(self, task, reuse_type, filename):
+    def getTaskReuseFile(self, task, reuse_type, filename, directory):
         self.log.debug("(func getTaskReuseFile) filename: "+filename)
         self.log.debug("(func getTaskReuseFile) reuse_type: "+reuse_type)
         if 'file' in task[reuse_type]:
@@ -249,6 +298,26 @@ class TasksWriter(WriterBase):
                 self.flow[filename] = []
             self.flow[filename].append({"include": task[reuse_type]})
             self.getFlowDataForFile(directory, task[reuse_type])
+
+    def getTaskRoleFile(self, task, reuse_type, filename):
+        self.log.debug("(func getTaskRoleFile) filename: "+filename)
+        self.log.debug("(func getTaskRoleFile) reuse_type: "+reuse_type)
+
+        # Extract role name from task
+        role_name = None
+        if isinstance(task[reuse_type], dict):
+            # Format: name: role_name
+            role_name = task[reuse_type].get('name')
+        elif isinstance(task[reuse_type], str):
+            # Direct string format
+            role_name = task[reuse_type]
+
+        if role_name and not role_name.startswith('{{'):
+            if filename not in self.flow.keys():
+                self.flow[filename] = []
+            # Represent roles with 'role:' prefix to distinguish from tasks
+            role_reference = f"role:{role_name}"
+            self.flow[filename].append({"include": role_reference})
 
 
     def getOrphanedFlowData(self, directory):

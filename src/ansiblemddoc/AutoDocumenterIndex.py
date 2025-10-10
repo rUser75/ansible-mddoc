@@ -135,7 +135,7 @@ class IndexWriter:
                 try:
                     roles = yaml.safe_load(stream)
                     for role in roles:
-                        requirements.append(role.get('name') + ' (' + role.get('src') + ')')
+                        requirements.append(str(role.get('name')) + ' (' + str(role.get('src')) + ')')
                 except yaml.YAMLError as exc:
                     print(exc)
         return requirements
