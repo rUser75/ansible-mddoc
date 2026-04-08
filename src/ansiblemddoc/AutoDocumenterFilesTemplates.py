@@ -70,7 +70,7 @@ class FilesTemplatesWriter(WriterBase):
     def addFileOrTemplate(self, filename, mdFile):
         self.log.debug("(addFileOrTemplate) Filename: "+filename)
 
-        with open(filename, 'r') as stream:
+        with open(filename, 'r', errors='replace') as stream
             try:
                 mdFile.new_line("```")
                 mdFile.new_paragraph(stream.read())
