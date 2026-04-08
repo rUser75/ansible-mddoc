@@ -18,15 +18,15 @@ class WriterBase:
         self.log.debug("(makeDocsDir) Output Directory: "+doc_directory)
         if not os.path.exists(doc_directory):
             os.makedirs(doc_directory)
-    
+
     def iterateOnFilesAndDirectories(self, directory, output_directory):
         allowed_extensions = ['.sh','.yml','.yaml']
 
         self.log.debug("(iterateOnFilesAndDirectories) directory: "+ directory)
         self.log.debug("(iterateOnFilesAndDirectories) output_directory: "+ output_directory)
 
-        
-        
+
+
         for (dirpath, dirnames, filenames) in walk(directory):
             self.log.debug("(iterateOnFilesAndDirectories) dirpath: "+ dirpath)
             relPath = dirpath.replace(directory,"")
@@ -46,9 +46,6 @@ class WriterBase:
             self.createMDCombinationFile(combination['filename'], directory, output_directory, combination['files_to_combine'])
 
     def isFileVaultEncrypted(self, directory, filename):
-        with open(directory+"/"+filename, 'r') as stream:
-            data = stream.readlines()
-            if data[0].startswith('$ANSIBLE_VAULT;1.1;AES256'):
-                return True
-            else:
-                return False
+        with open(directory+"/"+filename, 'rb') as stream:
+            first_line = stream.readline()
+            return first_line.startswith(b'$ANSIBLE_VAULT;1.1;AES256')
